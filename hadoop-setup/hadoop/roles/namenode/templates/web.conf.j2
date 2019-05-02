@@ -1,0 +1,6 @@
+<VirtualHost _default_:80>
+  DocumentRoot "/var/www/pub"
+  RewriteEngine On
+  # Redirect all requests to the local Apache server to port 50070
+  RewriteRule ^.*$ http://%{HTTP_HOST}:50070%{REQUEST_URI}
+</VirtualHost>

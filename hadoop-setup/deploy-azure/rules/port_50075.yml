@@ -1,0 +1,23 @@
+---
+- name: "Create Azure resources"
+  connection: local
+  hosts: all
+  gather_facts: no
+  vars_files:
+    - ../vars/values.yml
+  vars:
+    - resourcegroup_name: "{{project_prefix}}-rg"
+    - securitygroup_name: "{{project_prefix}}-nsg"
+  tasks:
+    - azure_rm_securitygroup:
+          resource_group: "{{resourcegroup_name}}"
+          name: "{{securitygroup_name}}"
+          rules:
+              - name: 'AllowDataNode'
+                protocol: Tcp
+                destination_port_range: 50075
+                access: Allow
+                priority: 114
+                direction: Inbound
+#This file is made because of a bug in ansible azure module as multiple loops cannot be added together , so i made a seprate playbook for doing the particular task(Task adding rule to open 6380 port to access the redis cluster)
+##The report of the bug can be found   https://github.com/ansible/ansible/issues/43607

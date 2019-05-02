@@ -1,0 +1,28 @@
+---
+# This playbook deploys the whole hadoop cluster in azure.
+
+- hosts: all
+  tasks:
+  - include_role:
+      name: common
+
+- hosts: namenode
+  tasks:
+  - include_role:
+      name: namenode
+  tags:
+      - namenode
+
+- hosts: jobtracker
+  tasks:
+  - include_role:
+      name: jobtracker
+  tags:
+      - jobtracker
+
+- hosts: datanode
+  tasks:
+  - include_role:
+      name: datanode
+  tags:
+      - datanode

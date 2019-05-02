@@ -1,0 +1,10 @@
+location: centralus
+project_prefix: hadoop
+instances_number: 4
+vm_size: Standard_B1ms
+managed_disk_type: Standard_LRS
+admin_username: vagrant
+admin_pub_path: ~/.ssh/id_rsa.pub
+local_ip: 
+virtualnetwork_cidr: 172.16.0.0/18
+subnet_cidr: 172.16.1.0/24

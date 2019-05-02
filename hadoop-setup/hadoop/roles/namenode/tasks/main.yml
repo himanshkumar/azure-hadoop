@@ -1,0 +1,66 @@
+---
+# tasks file for namenode
+
+#- name: creating a directory
+#  file:
+#      path: /namenode
+#      state: directory
+- name: "Namenode Tasks: Test for hdfs configuration"
+  shell: 'grep "dfs.name.dir" /etc/hadoop/hdfs-site.xml'
+  args:
+      executable: /bin/bash
+  register: test_grep
+  ignore_errors: true
+- name: "Namenode Tasks: Configuring hdfs-site.xml"
+  blockinfile:
+      path: /etc/hadoop/hdfs-site.xml
+      insertafter: "<configuration>"
+      content: |
+              <property>
+              <name>dfs.name.dir</name>
+              <value>/namenode</value>
+              </property>
+  when: test_grep.stdout == ""
+- name: "Namenode Tasks: Test for core configuration"
+  shell: 'grep "fs.default.name" /etc/hadoop/core-site.xml'
+  args:
+      executable: /bin/bash
+  register: test_grep1
+  ignore_errors: true
+- name: "Namenode Tasks: Configuring core-site.xml"
+  blockinfile:
+      path: /etc/hadoop/core-site.xml
+      insertafter: "<configuration>"
+      content: |
+              <property>
+              <name>fs.default.name</name>
+              <value>hdfs://172.16.1.4:9001</value>
+              </property>
+  when: test_grep1.stdout == ""
+- name: "Namenode Tasks: Formating name node"
+  command: "hadoop namenode -format"
+  ignore_errors: true
+- name: "Namenode Tasks: Test for services"
+  shell: 'jps | grep NameNode'
+  args:
+      executable: /bin/bash
+  register: test_grep2
+  ignore_errors: true
+- name: "Namenode Tasks: Start services"
+  command: "hadoop-daemon.sh start namenode"
+  when: test_grep2.stdout == ""
+
+##--Webserver Installation----##
+- name: install the latest version of Apache
+  yum:
+    name: httpd
+    state: latest
+- name: Configuration file copy
+  template:
+    src: web.conf.j2
+    dest: /etc/httpd/conf.d/web.conf
+
+- name: Restart service httpd, in all cases
+  service:
+    name: httpd
+    state: restarted

@@ -1,0 +1,62 @@
+---
+# tasks file for jobtracker
+
+- name: Test for mapred configuration
+  shell: 'grep "mapred.job.tracker" /etc/hadoop/mapred-site.xml'
+  args:
+      executable: /bin/bash
+  register: test_grep
+  ignore_errors: true
+
+- name: Configuring mapred-site.xml
+  blockinfile:
+      path: /etc/hadoop/mapred-site.xml
+      insertafter: "<configuration>"
+      content: |
+              <property>
+              <name>mapred.job.tracker</name>
+              <value>172.16.1.5:9002</value>
+              </property>
+  when: test_grep.stdout == ""
+
+- name: Test for core configuration
+  shell: 'grep "fs.default.name" /etc/hadoop/core-site.xml'
+  args:
+      executable: /bin/bash
+  register: test_grep1
+  ignore_errors: true
+
+- name: Configuring core-site.xml
+  template:
+    src: core-site.xml.j2
+    dest: /etc/hadoop/core-site.xml
+    mode: 0644
+  when: test_grep1.stdout == ""
+
+- name: Test for services
+  shell: 'jps | grep JobTracker'
+  args:
+      executable: /bin/bash
+  register: test_grep2
+  ignore_errors: true
+    
+- name: "start services"
+  command: "hadoop-daemon.sh start jobtracker"
+  when: test_grep2.stdout == ""
+
+
+##--Web server installation--##
+
+- name: install the latest version of Apache
+  yum:
+    name: httpd
+    state: latest
+- name: Configuration file copy
+  template:
+    src: web.conf.j2
+    dest: /etc/httpd/conf.d/web.conf
+
+- name: Restart service httpd, in all cases
+  service:
+    name: httpd
+    state: restarted

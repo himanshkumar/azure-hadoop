@@ -1,0 +1,72 @@
+---
+# tasks file for datanode
+# Configuring datanodes
+
+- name: "Creating a directory"
+  file:
+      path: /share
+      state: directory
+- name: "Datanode Tasks: Test for hdfs configuration"
+  shell: 'grep "dfs.data.dir" /etc/hadoop/hdfs-site.xml'
+  args:
+      executable: /bin/bash
+  register: test_grep
+  ignore_errors: true
+- name: "Editing hdfs-site.xml"
+  blockinfile:
+      path: /etc/hadoop/hdfs-site.xml
+      insertafter: "<configuration>"
+      content: |
+              <property>
+              <name>dfs.data.dir</name>
+              <value>/share</value>
+              </property>
+  when: test_grep.stdout == ""
+- name: "Test for core configuration"
+  shell: 'grep "fs.default.name" /etc/hadoop/core-site.xml'
+  args:
+      executable: /bin/bash
+  register: test_grep1
+  ignore_errors: true
+- name: "Editing core-site.xml"
+  template:
+    src: core-site.xml.j2
+    dest: /etc/hadoop/core-site.xml
+    mode: 0644
+  when: test_grep1.stdout == ""
+- name: "Test for services"
+  shell: 'jps | grep DataNode'
+  args:
+      executable: /bin/bash
+  register: test_grep2
+  ignore_errors: true
+- name: "Start services"
+  command: "hadoop-daemon.sh start datanode"
+  when: test_grep2.stdout == ""
+
+#Configuring Tasktracker
+
+- name: Test for mapred configuration
+  shell: 'grep "mapred.job.tracker" /etc/hadoop/mapred-site.xml'
+  args:
+      executable: /bin/bash
+  register: test_grep
+  ignore_errors: true
+
+- name: Configuring mapred-site.xml
+  template:
+    src: mapred-site.xml.j2
+    dest: /etc/hadoop/mapred-site.xml
+    mode: 0644
+  when: test_grep.stdout == ""
+
+- name: Test for services
+  shell: 'jps | grep tasktracker'
+  args:
+      executable: /bin/bash
+  register: test_grep2
+  ignore_errors: true  
+ 
+- name: "start services"
+  command: "hadoop-daemon.sh start tasktracker"
+  when: test_grep2.stdout == ""

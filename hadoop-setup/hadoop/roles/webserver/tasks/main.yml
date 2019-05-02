@@ -1,0 +1,14 @@
+---
+# tasks file for webserver
+- name: install the latest version of Apache
+  yum:
+    name: httpd
+    state: latest
+- name: Configuring web server for pot forwarding
+  template:
+    src: web.conf.j2
+    dest: /etc/httpd/conf.d
+- name: Restart service httpd, in all cases
+  service:
+    name: httpd
+    state: restarted

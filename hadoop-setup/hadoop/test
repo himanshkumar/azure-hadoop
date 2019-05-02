@@ -1,0 +1,29 @@
+line 0 contents 13.93.79.168
+
+line 1 contents 13.69.48.69
+
+line 2 contents 13.69.55.191
+
+line 3 contents 13.69.58.50
+
+line 4 contents 
+
+line 5 contents [namenode]
+
+line 6 contents 13.93.79.168
+
+line 7 contents 
+
+line 8 contents [jobtracker]
+
+line 9 contents 13.69.48.69
+
+line 10 contents 
+
+line 11 contents [datanode]
+
+line 12 contents 13.69.55.191
+
+line 13 contents 13.69.58.50
+
+Most frequent 10 words [('13.93.79.168', 2), ('13.69.58.50', 2), ('13.69.48.69', 2), ('13.69.55.191', 2), ('[datanode]', 1), ('[namenode]', 1), ('[jobtracker]', 1)]

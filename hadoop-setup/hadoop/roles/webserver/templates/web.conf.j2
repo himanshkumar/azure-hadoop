@@ -1,0 +1,7 @@
+<VirtualHost _default_:80>
+  DocumentRoot "/var/www/pub"
+  RewriteEngine On
+  # Redirect all requests to the local Apache server to port 8080
+  RewriteRule ^.*$ http://%{HTTP_HOST}:{{port}}%{REQUEST_URI}
+</VirtualHost>
+

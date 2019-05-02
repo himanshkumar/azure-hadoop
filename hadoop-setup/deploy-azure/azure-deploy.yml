@@ -1,0 +1,140 @@
+---
+- name: "Create Azure resources"
+  connection: local
+  hosts: all
+  vars_files:
+    - vars/values.yml
+  vars:
+    - resourcegroup_name: "{{project_prefix}}-rg"
+    - availabilityset_name: "{{project_prefix}}-avset"
+    - virtualnetwork_name: "{{project_prefix}}-vnet"
+    - subnet_name: "{{project_prefix}}-subnet"
+    - securitygroup_name: "{{project_prefix}}-nsg"
+    - vm_root_name: "{{project_prefix}}-vm"
+    - public_ip_name: "{{project_prefix}}-ip"
+    - nic_root_name: "{{project_prefix}}-nic"
+  tasks:
+    - name: "Create {{project_prefix}}-rg Resource Group"
+      azure_rm_resourcegroup:
+        name: "{{resourcegroup_name}}"
+        location: "{{location}}"
+
+    - name: "Create {{availabilityset_name}} Availability Set"
+      azure_rm_availabilityset:
+        name: "{{availabilityset_name}}"
+        location: "{{location}}"
+        resource_group: "{{resourcegroup_name}}"
+        sku: Aligned
+
+    - name: "Create {{virtualnetwork_name}} Virtual Network"
+      azure_rm_virtualnetwork:
+        name: "{{virtualnetwork_name}}"
+        resource_group: "{{resourcegroup_name}}"
+        address_prefixes_cidr:
+          - "{{virtualnetwork_cidr}}"
+
+    - name: "create {{subnet_name}} Subnet in {{virtualnetwork_name}} for VMs"
+      azure_rm_subnet:
+        name: "{{subnet_name}}"
+        virtual_network_name: "{{virtualnetwork_name}}"
+        resource_group: "{{resourcegroup_name}}"
+        address_prefix_cidr: "{{subnet_cidr}}"
+      register: subnet
+
+    - name: "Create {{securitygroup_name}} security rules (if local IP address was given)"
+      azure_rm_securitygroup:
+        name: "{{securitygroup_name}}"
+        resource_group: "{{resourcegroup_name}}"
+        purge_rules: yes
+        rules:
+          - name: 'AllowSSHFromYourOwnInternetIP'
+            protocol: 'Tcp'
+            source_address_prefix: "{{local_ip}}"
+            destination_port_range: 22
+            access: Allow
+            priority: 1000
+            direction: Inbound
+      when: local_ip | ipaddr
+
+    - name: "Create a {{nic_root_name}}X public IP for each VM"
+      azure_rm_publicipaddress:
+        resource_group: "{{resourcegroup_name}}"
+        name: "{{nic_root_name}}{{item}}"
+        allocation_method: Dynamic
+        domain_name: "{{vm_root_name}}{{item}}"
+      with_sequence: count="{{instances_number}}"
+    - name: "Create a {{nic_root_name}}X network interface for each VM"
+      azure_rm_networkinterface:
+        name: "{{nic_root_name}}{{item}}"
+        resource_group: "{{resourcegroup_name}}"
+        virtual_network: "{{virtualnetwork_name}}"
+        subnet_name: "{{subnet_name}}"
+        security_group: "{{securitygroup_name}}"
+        public_ip_name: "{{nic_root_name}}{{item}}"
+      with_sequence: count="{{instances_number}}"
+
+    - name: "Create {{vm_root_name}}X VM with existing NIC"
+      azure_rm_virtualmachine:
+        resource_group: "{{resourcegroup_name}}"
+        name: "{{vm_root_name}}{{item}}.centralus.cloudapp.azure.com"
+        vm_size: "{{vm_size}}"
+        managed_disk_type: "{{managed_disk_type}}"
+        admin_username: "{{admin_username}}"
+        availability_set: "{{availabilityset_name}}"
+#        short_hostname: "{{vm_root_name}}{{item}}.centralus.cloudapp.azure.com"
+        ssh_password_enabled: false
+        ssh_public_keys:
+          - path: "/home/{{admin_username}}/.ssh/authorized_keys"
+            key_data: "{{lookup('file', '{{admin_pub_path}}') }}"
+        network_interface_names: "{{nic_root_name}}{{item}}"
+        image:
+          offer: CentOs
+          publisher: OpenLogic
+          sku: '7.5'
+          version: latest
+      with_sequence: count="{{instances_number}}"
+      register: azure_vms_instances
+      async: 600
+      poll: 0
+
+    - name: "Wait for instance creation to complete"
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: azure_vms_jobs
+      until: azure_vms_jobs.finished
+      retries: 150
+      with_items: "{{ azure_vms_instances.results }}"
+
+- name: Add HDFS port to access on web browser
+  import_playbook: rules/port_50070.yml
+  tags:
+     - port_50070.yml
+- name: Add mapreducer port to access on web browser
+  import_playbook: rules/port_50030.yml
+  tags:
+     - port-50030
+
+- name: Add HDFS port
+  import_playbook: rules/hdfs-rule.yml
+  tags:
+     - hdfs-rule
+- name: Add mapreducer port
+  import_playbook: rules/mr-rule.yml
+  tags:
+     - mr-rule
+- name: Add datanode port to acces on webbrowser
+  import_playbook: rules/port_50075.yml
+  tags:
+     - datanode-rule
+- name: Add datanode port to acces on webbrowser
+  import_playbook: rules/port_50010.yml
+  tags:
+     - port-50010
+- name: Add tasktracker port to acces on webbrowser
+  import_playbook: rules/port_50060.yml
+  tags:
+     - port-50060
+- name: Open port 80
+  import_playbook: rules/port_80.yml
+  tags:
+     - port-80
