@@ -1,4 +1,4 @@
-# Hadoop1-Azure
+# INSTRUCTIONS
 ##TO SETUP HADOOP CLUSTER ON AZURE##
 ## We assume that you have cloned the git repo
 $ cd Hadoop1-Azure/hadoop-setup/
