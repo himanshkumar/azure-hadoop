@@ -1,6 +1,6 @@
 # Hadoop1-Azure
 ##TO SETUP HADOOP CLUSTER ON AZURE##
-
+## We assume that you have cloned the git repo
 $ cd Hadoop1-Azure/hadoop-setup/
 
 ##If you want to install and login Azure ##
@@ -18,5 +18,9 @@ $ ./execute.sh
 ##After 20-25min(depending on the internet speed) your cluster will be ready and displaying you you public ip to access the web ui##
 
 To access the web ui of namenode "http://<namenode_ip>:50070"
+or
+Click on the Domain name of  VM1.
 
 To access the web ui of jobtracker "http://<jobtracker_ip>:50030"
+or
+Click on the Domain name of  VM2.
